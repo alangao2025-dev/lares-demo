@@ -270,7 +270,7 @@ footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
 .palace-sum b { font-family: var(--serif); font-size: 20px; color: var(--ink); }
 .palace-sum b.g { color: var(--moss); }
 .palace-sum b.c { color: var(--gold); }
-button.palace { text-align: left; cursor: pointer; font-family: inherit; font-size: 13px; line-height: inherit; color: inherit; width: 100%; }
+button.palace { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; text-align: left; cursor: pointer; font-family: inherit; font-size: 13px; line-height: inherit; color: inherit; width: 100%; }
 @media (max-width: 640px) { button.palace { font-size: 11.5px; } }
 button.palace:hover { box-shadow: 0 4px 14px rgba(169,130,63,.18); }
 .palace.care { border-top-color: var(--gold); background: linear-gradient(180deg, #fffaf0, #f8efdc); }
