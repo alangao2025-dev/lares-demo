@@ -32,7 +32,14 @@ export interface Opportunity {
   area: L; title: L; desc: L; basis: L; tip: L; why: L; products: Product[];
 }
 export interface Strength { key: string; title: L; text: L }
-export interface Cell { dir: Dir; trigram?: Trigram; area: L; element: Element; houseStar?: YouNian; personStar?: YouNian; annual: number; rooms: RoomType[]; status: "thriving" | "balanced" | "care" }
+export interface Cell {
+  dir: Dir; trigram?: Trigram; area: L; element: Element; houseStar?: YouNian; personStar?: YouNian; annual: number; rooms: RoomType[];
+  status: "thriving" | "balanced" | "care";
+  /** 宅星的职责化表达：吉方显示含义，凶方显示宜作用途 */
+  houseLine?: { text: L; ok: boolean };
+  personLine?: L;
+  reason?: L; guardian?: Product; target?: string;
+}
 
 export const FOCUS_L: Record<Focus, L> = {
   wealth: l("Wealth", "财运"), career: l("Career", "事业"), love: l("Love", "感情"), health: l("Health & Sleep", "健康安睡"),
@@ -284,19 +291,46 @@ export function buildReading(form: Form) {
 
   opps.sort((a, b) => b.sev - a.sev);
 
-  // 九宫
+  // 九宫：守护位只给最需要的 1–3 宫
+  const SUPPORT_ROOMS: RoomType[] = ["kitchen", "bathroom", "laundry", "garage"];
+  const careMap = new Map<Dir, { rank: number; reason: L; guardian?: Product; target: string }>();
+  const putCare = (d: Dir, rank: number, reason: L, guardian: Product | undefined, target: string) => {
+    const cur = careMap.get(d);
+    if (!cur || rank > cur.rank) careMap.set(d, { rank, reason, guardian, target });
+  };
+  for (const d of [...DIRS8, "C"] as Dir[]) {
+    if (stars[d].n === 5) putCare(d, 100, fmt(l("{y}: the 5 Yellow star visits — keep this palace calm.", "{y} 年五黄到此，宜静。"), { y: String(ANNUAL_YEAR) }), PRODUCTS.wulou, "annual");
+  }
+  for (const o of opps) if (o.dir && o.sev >= 2 && o.products[0]) putCare(o.dir, 10 + o.sev * 10 + (o.cat === "E" ? 0 : 1), o.title, o.products[0], `opp-${o.key}`);
+  for (const d of [...DIRS8, "C"] as Dir[]) {
+    if (stars[d].n === 2) putCare(d, 15, fmt(l("{y}: the 2 Black star visits — keep it peaceful.", "{y} 年二黑到此，宜安和。"), { y: String(ANNUAL_YEAR) }), PRODUCTS.chime, "annual");
+  }
+  const careDirs = new Set([...careMap.entries()].sort((a, b) => b[1].rank - a[1].rank).slice(0, 3).map(([d]) => d));
+
   const cells = {} as Record<Dir, Cell>;
   for (const d of [...DIRS8, "C"] as Dir[]) {
     const tri = d === "C" ? undefined : TRIGRAM_BY_DIR[d];
-    const care = opps.some((o) => o.dir === d) || stars[d].n === 5;
     const hs = d === "C" ? undefined : houseYN[d as Dir8];
     const ps = d === "C" || !owner ? undefined : owner.map[d as Dir8];
+    const rooms = form.rooms.filter((r) => r.dir === d).map((r) => r.type);
+    let houseLine: Cell["houseLine"];
+    if (hs?.good) houseLine = { text: fmt(l("Home: {g}", "宅：{g}"), { g: YOUNIAN_L[hs.key].good }), ok: true };
+    else if (hs) {
+      const sup = rooms.find((x) => SUPPORT_ROOMS.includes(x));
+      if (sup) houseLine = { text: fmt(l("✓ {room} fits this palace", "✓ {room}正合此位"), { room: ROOM_L[sup] }), ok: true };
+      else if (!rooms.length) houseLine = { text: l("Best for storage, laundry or bath", "宜作：储物、厨卫"), ok: false };
+    }
+    const personLine = ps?.good ? fmt(l("You: {g}", "你：{g}"), { g: YOUNIAN_L[ps.key].good }) : undefined;
+    const care = careDirs.has(d) ? careMap.get(d) : undefined;
     cells[d] = {
       dir: d, trigram: tri, area: tri ? TRIGRAM_L[tri.key].area : CENTER_AREA, element: tri ? tri.element : "土", houseStar: hs, personStar: ps,
-      annual: stars[d].n, rooms: form.rooms.filter((r) => r.dir === d).map((r) => r.type),
+      annual: stars[d].n, rooms, houseLine, personLine,
       status: care ? "care" : (hs?.good || ps?.good) ? "thriving" : "balanced",
+      reason: care?.reason, guardian: care?.guardian, target: care?.target,
     };
   }
+  const palaceCount = { thriving: 0, balanced: 0, care: 0 };
+  for (const d of [...DIRS8, "C"] as Dir[]) palaceCount[cells[d].status]++;
 
   // 重点领域
   const focusPlans = form.focus.map((f) => {
@@ -345,7 +379,7 @@ export function buildReading(form: Form) {
   const blessing = BLESSING[(owner?.trigram ?? houseTri).key];
   const edge = typeof form.degrees === "number" ? dirOfDegrees(form.degrees).edge : false;
 
-  return { facing, sit, door, houseTri, houseYN, people, opps, strengths, score, potential, grade, cells, focusPlans, annual, guardianSet, signature, blessing, edge, roomTypes: [...roomTypes] };
+  return { facing, sit, door, houseTri, houseYN, people, opps, strengths, score, potential, grade, cells, palaceCount, focusPlans, annual, guardianSet, signature, blessing, edge, roomTypes: [...roomTypes] };
 }
 
 export type Reading = ReturnType<typeof buildReading>;

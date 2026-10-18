@@ -57,7 +57,7 @@ export const YOUNIAN_L: Record<YouNianKey, { name: L; good: L }> = {
 
 export const STAR_L: Record<number, { name: L; note: L }> = {
   1: { name: l("1 White · Connection", "一白 · 人缘"), note: l("supports connection and new opportunities", "主人缘与新机会") },
-  2: { name: l("2 Black · Needs care", "二黑 · 需呵护"), note: l("an area to keep calm and gently balanced this year", "今年宜安静、温和调和") },
+  2: { name: l("2 Black · Keep gentle", "二黑 · 宜安和"), note: l("an area to keep calm and gently balanced this year", "今年宜安静、温和调和") },
   3: { name: l("3 Jade · Lively", "三碧 · 活跃"), note: l("lively energy; soft warm light keeps conversations kind", "气场活跃，暖光可让交流更融洽") },
   4: { name: l("4 Green · Study", "四绿 · 文昌"), note: l("supports study, writing and focus", "主学业、文思与专注") },
   5: { name: l("5 Yellow · Rest", "五黄 · 宜静"), note: l("best kept quiet — avoid renovation here this year", "今年宜静，避免在此装修动土") },

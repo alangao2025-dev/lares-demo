@@ -33,7 +33,7 @@ function ProductCard({ p, inCart, toggle }: { p: Product; inCart: boolean; toggl
 function OppCard({ o, n, cart, toggle }: { o: Opportunity; n: number; cart: Set<string>; toggle: (id: string) => void }) {
   const { t, lang } = useT();
   return (
-    <article className="opp">
+    <article className="opp" id={`opp-${o.key}`}>
       <div className="opp-head">
         <span className="opp-n">{n}</span>
         <div>
@@ -147,24 +147,41 @@ export default function Report({ reading: r, form, quick, onRestart, onEdit, onD
       {!quick && <>
       <h2 className="sec">{zh ? "九宫守护图" : "Your Nine Palaces"}</h2>
       <p className="sec-sub">{zh ? "上北下南。每一宫对应一个生活领域与一位守护者。" : "North at the top. Each palace governs an area of life — and each has its guardian."}</p>
+      <div className="palace-sum">
+        {zh
+          ? <>你家有 <b className="g">{r.palaceCount.thriving}</b> 个当旺位、<b>{r.palaceCount.balanced}</b> 个安和位{r.palaceCount.care > 0 && <>、<b className="c">{r.palaceCount.care}</b> 个守护位。请来 {r.palaceCount.care} 位守护者，九宫即可圆满。</>}{r.palaceCount.care === 0 && "，九宫已然圆满。"}</>
+          : <>Your home has <b className="g">{r.palaceCount.thriving}</b> thriving palaces, <b>{r.palaceCount.balanced}</b> steady{r.palaceCount.care > 0 ? <> and <b className="c">{r.palaceCount.care}</b> guardian spot{r.palaceCount.care > 1 ? "s" : ""}. Invite {r.palaceCount.care} guardian{r.palaceCount.care > 1 ? "s" : ""} and all nine palaces are complete.</> : <> — all nine palaces are in harmony.</>}</>}
+      </div>
       <div className="palaces">
         {GRID.map((d) => {
           const c = r.cells[d];
-          const st = c.status === "thriving" ? l("Thriving", "旺") : c.status === "care" ? l("Needs care", "待守护") : l("Balanced", "平");
+          const st = c.status === "thriving" ? l("Thriving", "当旺 · 宜多用") : c.status === "care" ? l("Guardian Spot", "守护位") : l("Steady", "安和");
+          const go = () => {
+            if (!c.target) return;
+            if (c.target.startsWith("opp-")) setShowAll(true);
+            setTimeout(() => document.getElementById(c.target!)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+          };
+          const Tag = c.status === "care" ? "button" : "div";
           return (
-            <div key={d} className={`palace ${c.status}`}>
+            <Tag key={d} className={`palace ${c.status}`} onClick={c.status === "care" ? go : undefined}>
               <div className="pl-top"><b>{t(DIR_SHORT[d])}</b><span>{c.trigram ? `${c.trigram.symbol} ${t(TRIGRAM_L[c.trigram.key].name)}` : "☯"}</span><em>{t(st)}</em></div>
               <div className="pl-area">{t(c.area)}</div>
               <div className="pl-el">{t(ELEMENT_L[c.element])} · {t(ELEMENT_COLORS_L[c.element])}</div>
-              {c.houseStar && <div className={`pl-star ${c.houseStar.good ? "g" : ""}`}>{zh ? "宅：" : "Home: "}{t(c.houseStar.good ? YOUNIAN_L[c.houseStar.key].good : YOUNIAN_L[c.houseStar.key].name)}</div>}
-              {c.personStar && <div className={`pl-star ${c.personStar.good ? "g" : ""}`}>{zh ? "你：" : "You: "}{t(c.personStar.good ? YOUNIAN_L[c.personStar.key].good : YOUNIAN_L[c.personStar.key].name)}</div>}
-              <div className="pl-annual">{r.annual.year} · {t(STAR_L[c.annual].name)}</div>
+              {c.houseLine && <div className={`pl-star ${c.houseLine.ok ? "g" : ""}`}>{t(c.houseLine.text)}</div>}
+              {c.personLine && <div className="pl-star g">{t(c.personLine)}</div>}
+              {c.status !== "care" && <div className="pl-annual">{r.annual.year} · {t(STAR_L[c.annual].name)}</div>}
               {c.rooms.length > 0 && <div className="pl-rooms">{c.rooms.map((x) => t(ROOM_L[x])).join(" · ")}</div>}
-            </div>
+              {c.status === "care" && (
+                <div className="pl-guard">
+                  <p>{t(c.reason)}</p>
+                  {c.guardian && <div className="pl-gp"><span>{c.guardian.icon}</span>{zh ? "此宫守护者：" : "Guardian: "}<b>{t(c.guardian.name)}</b></div>}
+                  <span className="pl-more">{zh ? "查看建议 →" : "See how →"}</span>
+                </div>
+              )}
+            </Tag>
           );
         })}
       </div>
-
       </>}
 
       {r.focusPlans.length > 0 && <>
@@ -179,7 +196,7 @@ export default function Report({ reading: r, form, quick, onRestart, onEdit, onD
       </>}
 
       <h2 className="sec">{zh ? `${r.annual.year} 年度能量更新` : `${r.annual.year} Annual Energy Update`}</h2>
-      <div className="card annual">
+      <div className="card annual" id="annual">
         <p className="hint">{zh ? `自 ${r.annual.year} 年 2 月 4 日立春起生效 · 丁未火羊年（农历新年 2 月 6 日）` : `Takes effect at Li Chun, Feb 4, ${r.annual.year} · Year of the Fire Goat (Lunar New Year: Feb 6)`}</p>
         <ul>
           <li><b>{t(DIR_L[r.annual.five])} · {t(STAR_L[5].name)}</b> — {t(STAR_L[5].note)}. {zh ? "可放置铜葫芦或六帝钱，避免红色。" : "Place a brass gourd or six emperor coins; skip red décor."}</li>

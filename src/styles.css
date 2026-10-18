@@ -252,7 +252,7 @@ footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
   .palaces { gap: 5px; }
   .palace { padding: 7px; font-size: 11.5px; }
   .pl-el, .pl-star { display: none; }
-  .pl-top em { display: none; }
+  .pl-top em { font-size: 10px; padding: 0 5px; }
   .rose { width: 230px; height: 230px; margin: 0 auto; }
   .facing { justify-content: center; }
   .sec { font-size: 27px; }
@@ -266,3 +266,18 @@ footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
 .deepen h3 { font-size: 26px; margin-bottom: 6px; }
 .deepen ul { margin: 0; padding-left: 18px; color: var(--ink2); }
 .deepen li::marker { color: var(--gold); }
+.palace-sum { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; color: var(--ink2); }
+.palace-sum b { font-family: var(--serif); font-size: 20px; color: var(--ink); }
+.palace-sum b.g { color: var(--moss); }
+.palace-sum b.c { color: var(--gold); }
+button.palace { text-align: left; cursor: pointer; font-family: inherit; font-size: 13px; line-height: inherit; color: inherit; width: 100%; }
+@media (max-width: 640px) { button.palace { font-size: 11.5px; } }
+button.palace:hover { box-shadow: 0 4px 14px rgba(169,130,63,.18); }
+.palace.care { border-top-color: var(--gold); background: linear-gradient(180deg, #fffaf0, #f8efdc); }
+.care .pl-top em { background: var(--gold); color: #fff; }
+.pl-guard { margin-top: 8px; border-top: 1px dashed var(--gold); padding-top: 6px; }
+.pl-guard p { margin: 0 0 4px; font-size: 12.5px; color: var(--ink); }
+.pl-gp { font-size: 12.5px; color: var(--ink2); }
+.pl-gp span { margin-right: 4px; }
+.pl-more { display: block; margin-top: 4px; font-size: 12px; color: var(--gold); }
+@media (max-width: 640px) { .pl-guard p { display: none; } .care .pl-top em { display: inline-block; } .pl-gp { font-size: 11px; } }
