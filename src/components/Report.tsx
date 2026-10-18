@@ -55,7 +55,7 @@ function OppCard({ o, n, cart, toggle }: { o: Opportunity; n: number; cart: Set<
   );
 }
 
-export default function Report({ reading: r, form, onRestart, onEdit }: { reading: Reading; form: Form; onRestart: () => void; onEdit: () => void }) {
+export default function Report({ reading: r, form, quick, onRestart, onEdit, onDeepen }: { reading: Reading; form: Form; quick?: boolean; onRestart: () => void; onEdit: () => void; onDeepen: () => void }) {
   const { t, lang } = useT();
   const zh = lang === "zh";
   const [cart, setCart] = useState<Set<string>>(new Set());
@@ -64,9 +64,24 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
   const toggle = (id: string) => setCart((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const cartTotal = [...cart].reduce((s, id) => s + PRODUCTS[id].price, 0);
   const setTotal = r.guardianSet.reduce((s, p) => s + p.price, 0);
-  const shown = showAll ? r.opps : r.opps.slice(0, 5);
+  const shown = quick ? r.opps.slice(0, 3) : showAll ? r.opps : r.opps.slice(0, 5);
   const hexLines = [...r.signature.house.lines, ...r.signature.door.lines];
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(""), 4500); };
+
+  const deepen = (
+    <div className="card deepen">
+      <div>
+        <div className="sig-label">{zh ? "深度解读 · 约 2 分钟" : "Deep reading · about 2 minutes"}</div>
+        <h3>{zh ? "想知道每个房间的守护者吗？" : "Want to know the guardian for every room?"}</h3>
+        <ul>
+          <li>{zh ? "解锁你家的宅气指数与提升空间" : "Unlock your Harmony Score — and how high it can go"}</li>
+          <li>{zh ? "九宫守护图：每个方位的状态一目了然" : "Your Nine Palaces map, direction by direction"}</li>
+          <li>{zh ? "逐个房间的精准分析，可上传照片获得 AI 解读" : "Room-by-room insights, plus AI photo insights"}</li>
+        </ul>
+      </div>
+      <button className="btn primary big" onClick={onDeepen}>{zh ? "继续深度解读 →" : "Deepen My Reading →"}</button>
+    </div>
+  );
 
   const checkout = (ids: string[]) => {
     const path = `/cart/${ids.map((id) => `${PRODUCTS[id].variant}:1`).join(",")}`;
@@ -76,7 +91,7 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
   return (
     <section className="report">
       <div className="r-hero">
-        <p className="eyebrow">{zh ? "你的风水先生家居解读" : "Your LARES Home Reading"}</p>
+        <p className="eyebrow">{quick ? (zh ? "你的快速解读" : "Your Quick Reading") : (zh ? "你的风水先生家居解读" : "Your LARES Home Reading")}</p>
         <h1>{t(UI.concept)}</h1>
         <div className="r-actions"><button className="link" onClick={onEdit}>{zh ? "修改答案" : "Edit answers"}</button><button className="link" onClick={onRestart}>{t(UI.restart)}</button></div>
       </div>
@@ -91,7 +106,17 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
         </div>
       </div>
 
-      <div className="card score">
+      {quick ? (
+        <div className="card score locked">
+          <div className="ring" style={{ ["--p" as string]: "60" }}><div><b>?</b><small>{zh ? "宅气指数" : "Harmony Score"}</small></div></div>
+          <div className="score-text">
+            <h2>{zh ? "你的宅气指数待解锁" : "Your Harmony Score is ready to unlock"}</h2>
+            <p className="hint">{zh ? "宅气指数需要了解你家各个房间的位置与布置。再回答几个简单问题（约 2 分钟）即可查看。" : "Your score depends on where each room sits and how it’s arranged. Answer a few more simple questions (about 2 minutes) to see it."}</p>
+            <button className="btn ghost" onClick={onDeepen}>{zh ? "解锁宅气指数" : "Unlock my score"}</button>
+          </div>
+        </div>
+      ) : (
+        <div className="card score">
         <div className="ring" style={{ ["--p" as string]: `${r.score}` }}>
           <div><b>{r.score}</b><small>{zh ? "宅气指数" : "Harmony Score"}</small></div>
         </div>
@@ -103,19 +128,23 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
         </div>
       </div>
 
+      )}
+
       {r.edge && <p className="hint warn center">{zh ? "提示：你的朝向读数接近两个方位交界，建议复测，结果可能因此不同。" : "Note: your compass reading sits near a direction boundary — re-measuring may refine your reading."}</p>}
 
       <h2 className="sec">{zh ? "你家已经做得很好的地方" : "What’s Already Working"}</h2>
       <div className="strengths">
-        {r.strengths.map((s) => <div key={s.key} className="strength"><span>✦</span><div><b>{t(s.title)}</b><p>{t(s.text)}</p></div></div>)}
+        {(quick ? r.strengths.slice(0, 3) : r.strengths).map((s) => <div key={s.key} className="strength"><span>✦</span><div><b>{t(s.title)}</b><p>{t(s.text)}</p></div></div>)}
       </div>
 
-      <h2 className="sec">{zh ? "你家的守护者" : "Your Home’s Guardians"}</h2>
+      <h2 className="sec">{quick ? (zh ? "你家的第一批守护者" : "Your First Guardians") : (zh ? "你家的守护者" : "Your Home’s Guardians")}</h2>
       <p className="sec-sub">{zh ? "每个家都有需要被守护的地方。以下是我们为你找到的位置，以及适合请来的守护者。" : "Every home has places that would love a little care. Here’s where your guardians belong — and who to invite."}</p>
       {r.opps.length === 0 && <p className="hint">{zh ? "你的家已经非常和谐，可以从下方的“重点领域”和年度更新中锦上添花。" : "Your home is already beautifully balanced — see your focus areas and annual update below to add a finishing touch."}</p>}
       {shown.map((o, i) => <OppCard key={o.key} o={o} n={i + 1} cart={cart} toggle={toggle} />)}
-      {r.opps.length > 5 && <button className="btn ghost center-block" onClick={() => setShowAll(!showAll)}>{showAll ? (zh ? "收起" : "Show less") : (zh ? `查看其余 ${r.opps.length - 5} 项温和调整` : `See ${r.opps.length - 5} more gentle adjustments`)}</button>}
+      {quick && deepen}
+      {!quick && r.opps.length > 5 && <button className="btn ghost center-block" onClick={() => setShowAll(!showAll)}>{showAll ? (zh ? "收起" : "Show less") : (zh ? `查看其余 ${r.opps.length - 5} 项温和调整` : `See ${r.opps.length - 5} more gentle adjustments`)}</button>}
 
+      {!quick && <>
       <h2 className="sec">{zh ? "九宫守护图" : "Your Nine Palaces"}</h2>
       <p className="sec-sub">{zh ? "上北下南。每一宫对应一个生活领域与一位守护者。" : "North at the top. Each palace governs an area of life — and each has its guardian."}</p>
       <div className="palaces">
@@ -135,6 +164,8 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
           );
         })}
       </div>
+
+      </>}
 
       {r.focusPlans.length > 0 && <>
         <h2 className="sec">{zh ? "你最关心的方面" : "Your Focus"}</h2>
@@ -194,7 +225,7 @@ export default function Report({ reading: r, form, onRestart, onEdit }: { readin
         </div>
       </>}
 
-      <PhotoInsights reading={r} form={form} />
+      {quick ? deepen : <PhotoInsights reading={r} form={form} />}
 
       <div className="card blessing">
         <div className="sig-label">{zh ? "给你的祝福" : "A Blessing for You"}</div>

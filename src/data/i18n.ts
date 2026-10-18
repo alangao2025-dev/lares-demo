@@ -92,12 +92,12 @@ export const UI = {
   brandTag: l("Classical Feng Shui for Modern Homes", "传统罗盘风水 · 守护现代家居"),
   concept: l("Every home has its guardians — your lares and penates.", "每个家，都有它的守护者。"),
   heroSub: l(
-    "A free, personalized home reading rooted in the I Ching. Answer a few simple questions, add photos if you like, and discover where your home’s guardians belong.",
-    "一份源自《易经》的免费个性化家居解读。回答几个简单问题，可附上照片，找到你家的守护者应在何处。"),
+    "A free, personalized home reading rooted in the I Ching. Answer three quick questions and discover where your home’s guardians belong.",
+    "一份源自《易经》的免费个性化家居解读。回答三个简单问题，找到你家的守护者应在何处。"),
   start: l("Find Your Home’s Guardians — Free Reading", "找到你家的守护者 · 免费解读"),
   heroPoints: [
     l("Classical compass feng shui — based on your home’s real directions", "传统罗盘风水 —— 依据你家真实方位"),
-    l("Personal Kua number from your birth year", "按出生年份推算个人命卦"),
+    l("Just 3 questions to start — about 1 minute", "只需 3 个问题 · 约 1 分钟"),
     l("Gentle, simple adjustments — no renovation needed", "温和简单的摆设调整 —— 无需装修"),
   ],
   demo: l("Demo version · products and prices are placeholders", "演示版 · 商品与价格为示意"),

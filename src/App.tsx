@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LangCtx, Logo } from "./ui";
 import { UI, type Lang } from "./data/i18n";
-import Wizard, { emptyForm } from "./components/Wizard";
+import Wizard, { QuickStart, emptyForm } from "./components/Wizard";
 import Report from "./components/Report";
 import { buildReading, type Form } from "./engine/reading";
 
@@ -25,7 +25,7 @@ function initialForm(): Form {
 
 export default function App() {
   const [lang, setLang] = useState<Lang>(initialLang);
-  const [stage, setStage] = useState<"landing" | "wizard" | "report">("landing");
+  const [stage, setStage] = useState<"landing" | "quick" | "quickReport" | "deep" | "report">("landing");
   const [form, setForm] = useState<Form>(initialForm);
   const t = (x: { en: string; zh: string }) => x[lang];
 
@@ -63,7 +63,7 @@ export default function App() {
               <p className="eyebrow">{lang === "zh" ? "免费 · 个性化 · 源自《易经》" : "Free · Personalized · Rooted in the I Ching"}</p>
               <h1>{t(UI.concept)}</h1>
               <p className="hero-sub">{t(UI.heroSub)}</p>
-              <button className="btn primary big" onClick={() => setStage("wizard")}>{t(UI.start)}</button>
+              <button className="btn primary big" onClick={() => setStage("quick")}>{t(UI.start)}</button>
               <ul className="hero-points">{UI.heroPoints.map((p, i) => <li key={i}>{t(p)}</li>)}</ul>
               <div className="story">
                 <h2>{lang === "zh" ? "每个家，都有它的守护者" : "Every home has its guardians"}</h2>
@@ -81,8 +81,14 @@ export default function App() {
               </div>
             </section>
           )}
-          {stage === "wizard" && <Wizard form={form} setForm={setForm} onDone={() => setStage("report")} />}
-          {stage === "report" && <Report reading={buildReading(form)} form={form} onRestart={() => { setForm(emptyForm()); setStage("wizard"); }} onEdit={() => setStage("wizard")} />}
+          {stage === "quick" && <QuickStart form={form} setForm={setForm} onDone={() => setStage("quickReport")} />}
+          {stage === "deep" && <Wizard form={form} setForm={setForm} onDone={() => setStage("report")} onExit={() => setStage("quickReport")} />}
+          {(stage === "quickReport" || stage === "report") && (
+            <Report reading={buildReading(form)} form={form} quick={stage === "quickReport"}
+              onRestart={() => { setForm(emptyForm()); setStage("quick"); }}
+              onEdit={() => setStage(stage === "quickReport" ? "quick" : "deep")}
+              onDeepen={() => setStage("deep")} />
+          )}
         </main>
 
         <footer>

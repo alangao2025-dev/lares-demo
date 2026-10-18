@@ -87,64 +87,21 @@ function CompassButton({ onReading }: { onReading: (deg: number) => void }) {
   );
 }
 
-export default function Wizard({ form, setForm, onDone }: { form: Form; setForm: (f: Form) => void; onDone: () => void }) {
+
+const FACING_HINT: Record<string, L> = {
+  condo: l("Stand at your main window or balcony (the side with the most light) and look out. That direction is your home’s facing.", "站在主窗或阳台前（采光最多的一侧）向外看，这个方向就是房屋朝向。"),
+  house: l("Stand at your front door, facing the street. The direction you are looking is your home’s facing.", "站在正门口，面朝街道。你所看的方向就是房屋朝向。"),
+  any: l("House: stand at your front door facing the street. Condo: stand at your main window looking out. The direction you face is your home’s facing.", "独栋或联排：站在正门口面朝街道；公寓：站在主窗前向外看。你面对的方向就是房屋朝向。"),
+};
+
+export function FacingDoor({ form, up, miss }: { form: Form; up: (p: Partial<Form>) => void; miss: (k: string) => boolean }) {
   const { t, lang } = useT();
-  const [step, setStep] = useState(0);
-  const [showMissing, setShowMissing] = useState(false);
-  const up = (patch: Partial<Form>) => setForm({ ...form, ...patch });
   const zh = lang === "zh";
-
-  const roomTypes = new Set(form.rooms.map((r) => r.type));
-  const groups = (Object.keys(GROUP_L) as (keyof typeof GROUP_L)[]).filter((g) => {
-    const rt = GROUP_ROOMS[g];
-    return rt === "always" || rt.some((x) => roomTypes.has(x));
-  });
-  const visibleQs = QUESTIONS.filter((q) => groups.includes(q.group));
-
-  const missing: string[] = [];
-  if (step === 0) (["homeType", "facing", "door", "entrance", "stairs"] as const).forEach((k) => { if (!form[k]) missing.push(k); });
-  if (step === 1) { if (!form.focus.length) missing.push("focus"); if (!form.adult) missing.push("adult"); }
-  if (step === 2) { if (!form.rooms.length) missing.push("rooms"); form.rooms.forEach((r) => { if (!r.dir) missing.push(`room-${r.id}`); }); }
-  if (step === 3) visibleQs.forEach((q) => { if (!form.answers[q.id]) missing.push(q.id); });
-  const miss = (k: string) => showMissing && missing.includes(k);
-
-  const next = () => {
-    if (missing.length) { setShowMissing(true); return; }
-    setShowMissing(false);
-    if (step < 3) { setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); } else onDone();
-  };
-
-  const facingHint = form.homeType === "condo"
-    ? l("Stand at your main window or balcony (the side with the most light) and look out. That direction is your home’s facing.", "站在主窗或阳台前（采光最多的一侧）向外看，这个方向就是房屋朝向。")
-    : l("Stand at your front door, facing the street. The direction you are looking is your home’s facing.", "站在正门口，面朝街道。你所看的方向就是房屋朝向。");
+  const facingHint = FACING_HINT[form.homeType === "condo" ? "condo" : form.homeType ? "house" : "any"];
   const deg = typeof form.degrees === "number" ? dirOfDegrees(form.degrees) : null;
-
-  const setDegrees = (v: number | "") => {
-    if (v === "") { up({ degrees: "" }); return; }
-    up({ degrees: v, facing: dirOfDegrees(v).dir });
-  };
-
-  const onPhoto = async (id: number, file?: File) => {
-    if (!file) return;
-    const photo = await compressImage(file);
-    setForm({ ...form, rooms: form.rooms.map((r) => (r.id === id ? { ...r, photo } : r)) });
-  };
-
+  const setDegrees = (v: number | "") => { if (v === "") up({ degrees: "" }); else up({ degrees: v, facing: dirOfDegrees(v).dir }); };
   return (
-    <section className="wizard">
-      <ol className="stepper">
-        {UI.steps.map((s, i) => <li key={i} className={i === step ? "on" : i < step ? "done" : ""}><span>{i + 1}</span>{t(s)}</li>)}
-      </ol>
-
-      {step === 0 && (
-        <div className="card">
-          <h2>{zh ? "你的家" : "Your Home"}</h2>
-          <Field label={zh ? "你住的是哪种房子？" : "What type of home do you live in?"} missing={miss("homeType")}>
-            <Choice value={form.homeType} onChange={(v) => up({ homeType: v })} cols={4} options={[
-              { v: "house", label: l("Single-family house", "独栋住宅") }, { v: "townhouse", label: l("Townhouse", "联排别墅") },
-              { v: "condo", label: l("Condo / Apartment", "公寓") }, { v: "other", label: l("Other", "其他") },
-            ]} />
-          </Field>
+    <>
           <Field label={zh ? "你家朝向哪个方向？" : "Which direction does your home face?"} hint={t(facingHint)} missing={miss("facing")}>
             <div className="facing">
               <div className="rose" role="radiogroup" aria-label="facing">
@@ -171,6 +128,118 @@ export default function Wizard({ form, setForm, onDone }: { form: Form; setForm:
                 : <button key={d} type="button" className={`g9 ${form.door === d ? "on" : ""}`} onClick={() => up({ door: d as Dir8 })}>{t(DIR_L[d])}</button>)}
             </div>
           </Field>
+    </>
+  );
+}
+
+export function FocusField({ form, up, miss }: { form: Form; up: (p: Partial<Form>) => void; miss: (k: string) => boolean }) {
+  const { t, lang } = useT();
+  return (
+    <Field label={lang === "zh" ? "你现在最关心哪些方面？（可多选）" : "What matters most to you right now? (choose any)"} missing={miss("focus")}>
+      <div className="chips">
+        {(Object.keys(FOCUS_L) as Focus[]).map((f) => (
+          <button key={f} type="button" aria-pressed={form.focus.includes(f)} className={`chip ${form.focus.includes(f) ? "on" : ""}`}
+            onClick={() => up({ focus: form.focus.includes(f) ? form.focus.filter((x) => x !== f) : [...form.focus, f] })}>{t(FOCUS_L[f])}</button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+export function QuickStart({ form, setForm, onDone }: { form: Form; setForm: (f: Form) => void; onDone: () => void }) {
+  const { lang } = useT();
+  const zh = lang === "zh";
+  const [show, setShow] = useState(false);
+  const up = (patch: Partial<Form>) => setForm({ ...form, ...patch });
+  const missing = (["facing", "door"] as const).filter((k) => !form[k]) as string[];
+  if (!form.focus.length) missing.push("focus");
+  const miss = (k: string) => show && missing.includes(k);
+  const p0 = form.people[0] ?? { year: "", gender: "female" };
+  const setP0 = (patch: Partial<typeof p0>) => up({ people: [{ ...p0, ...patch }, ...form.people.slice(1)] });
+  return (
+    <section className="wizard">
+      <div className="quick-head">
+        <p className="eyebrow">{zh ? "快速解读 · 约 1 分钟" : "Quick reading · about 1 minute"}</p>
+        <h2>{zh ? "三个问题，遇见你家的守护者" : "Three questions to meet your home’s guardians"}</h2>
+      </div>
+      <div className="card">
+        <FacingDoor form={form} up={up} miss={miss} />
+        <FocusField form={form} up={up} miss={miss} />
+        <Field label={zh ? "你的出生年份（选填）" : "Your birth year (optional)"} hint={zh ? "填写后可推算个人命卦（Kua），解读更个性化。" : "Adds your personal Kua number for a more personal reading."}>
+          <div className="row person">
+            <input type="number" inputMode="numeric" placeholder={zh ? "如 1988" : "e.g. 1988"} value={p0.year} onChange={(e) => setP0({ year: e.target.value ? Number(e.target.value) : "" })} style={{ maxWidth: 180 }} />
+            <select value={p0.gender} onChange={(e) => setP0({ gender: e.target.value as "male" | "female" | "none" })} style={{ width: "auto" }}>
+              <option value="female">{zh ? "女" : "Female"}</option>
+              <option value="male">{zh ? "男" : "Male"}</option>
+              <option value="none">{zh ? "不愿透露" : "Prefer not to say"}</option>
+            </select>
+          </div>
+        </Field>
+      </div>
+      {show && missing.length > 0 && <p className="hint warn center">{zh ? "请完成标出的问题。" : "Please answer the highlighted questions."}</p>}
+      <div className="nav center-nav">
+        <button className="btn primary big" onClick={() => { if (missing.length) { setShow(true); return; } up({ adult: true }); onDone(); }}>{zh ? "查看我的守护者" : "Meet My Guardians"}</button>
+      </div>
+      <p className="hint center small-note">{zh ? "继续即表示你已年满 16 岁。不需要注册，也不会保存照片。" : "By continuing you confirm you are 16 or older. No sign-up needed."}</p>
+    </section>
+  );
+}
+
+export default function Wizard({ form, setForm, onDone, onExit }: { form: Form; setForm: (f: Form) => void; onDone: () => void; onExit: () => void }) {
+  const { t, lang } = useT();
+  const [step, setStep] = useState(0);
+  const [showMissing, setShowMissing] = useState(false);
+  const [editDir, setEditDir] = useState(false);
+  const up = (patch: Partial<Form>) => setForm({ ...form, ...patch });
+  const zh = lang === "zh";
+
+  const roomTypes = new Set(form.rooms.map((r) => r.type));
+  const groups = (Object.keys(GROUP_L) as (keyof typeof GROUP_L)[]).filter((g) => {
+    const rt = GROUP_ROOMS[g];
+    return rt === "always" || rt.some((x) => roomTypes.has(x));
+  });
+  const visibleQs = QUESTIONS.filter((q) => groups.includes(q.group));
+
+  const missing: string[] = [];
+  if (step === 0) (["homeType", "facing", "door", "entrance", "stairs"] as const).forEach((k) => { if (!form[k]) missing.push(k); });
+  if (step === 1 && !form.focus.length) missing.push("focus");
+  if (step === 2) { if (!form.rooms.length) missing.push("rooms"); form.rooms.forEach((r) => { if (!r.dir) missing.push(`room-${r.id}`); }); }
+  if (step === 3) visibleQs.forEach((q) => { if (!form.answers[q.id]) missing.push(q.id); });
+  const miss = (k: string) => showMissing && missing.includes(k);
+
+  const next = () => {
+    if (missing.length) { setShowMissing(true); return; }
+    setShowMissing(false);
+    if (step < 3) { setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); } else onDone();
+  };
+
+  const onPhoto = async (id: number, file?: File) => {
+    if (!file) return;
+    const photo = await compressImage(file);
+    setForm({ ...form, rooms: form.rooms.map((r) => (r.id === id ? { ...r, photo } : r)) });
+  };
+
+  return (
+    <section className="wizard">
+      <ol className="stepper">
+        {UI.steps.map((s, i) => <li key={i} className={i === step ? "on" : i < step ? "done" : ""}><span>{i + 1}</span>{t(s)}</li>)}
+      </ol>
+
+      {step === 0 && (
+        <div className="card">
+          <h2>{zh ? "关于你的家" : "About Your Home"}</h2>
+          <p className="hint">{zh ? "再花 2 分钟，解锁宅气指数、九宫守护图与逐个房间的精准分析。" : "Two more minutes unlock your Harmony Score, Nine Palaces map and a room-by-room reading."}</p>
+          <Field label={zh ? "你住的是哪种房子？" : "What type of home do you live in?"} missing={miss("homeType")}>
+            <Choice value={form.homeType} onChange={(v) => up({ homeType: v })} cols={4} options={[
+              { v: "house", label: l("Single-family house", "独栋住宅") }, { v: "townhouse", label: l("Townhouse", "联排别墅") },
+              { v: "condo", label: l("Condo / Apartment", "公寓") }, { v: "other", label: l("Other", "其他") },
+            ]} />
+          </Field>
+          <div className="field">
+            <div className="field-label">{zh ? "朝向与正门" : "Facing & front door"}</div>
+            <p className="hint">{zh ? `朝向：${t(DIR_L[form.facing as Dir8])} · 正门：${t(DIR_L[form.door as Dir8])}` : `Facing ${t(DIR_L[form.facing as Dir8])} · Front door ${t(DIR_L[form.door as Dir8])}`} <button type="button" className="link" onClick={() => setEditDir(!editDir)}>{editDir ? (zh ? "收起" : "Done") : (zh ? "修改" : "Change")}</button></p>
+            {editDir && <FacingDoor form={form} up={up} miss={miss} />}
+          </div>
           <Field label={zh ? "你平时最常从哪道门进出？" : "Which door do you use most often?"} missing={miss("entrance")}>
             <Choice value={form.entrance} onChange={(v) => up({ entrance: v })} cols={3} options={[
               { v: "front", label: l("Front door", "正门") }, { v: "garage", label: l("Garage door", "车库门") }, { v: "side", label: l("Side / back door", "侧门或后门") },
@@ -204,18 +273,7 @@ export default function Wizard({ form, setForm, onDone }: { form: Form; setForm:
             ))}
             {form.people.length < 4 && <button type="button" className="link" onClick={() => up({ people: [...form.people, { year: "", gender: "male" }] })}>+ {zh ? "添加家人" : "Add a person"}</button>}
           </Field>
-          <Field label={zh ? "你现在最关心哪些方面？（可多选）" : "What matters most to you right now? (choose any)"} missing={miss("focus")}>
-            <div className="chips">
-              {(Object.keys(FOCUS_L) as Focus[]).map((f) => (
-                <button key={f} type="button" aria-pressed={form.focus.includes(f)} className={`chip ${form.focus.includes(f) ? "on" : ""}`}
-                  onClick={() => up({ focus: form.focus.includes(f) ? form.focus.filter((x) => x !== f) : [...form.focus, f] })}>{t(FOCUS_L[f])}</button>
-              ))}
-            </div>
-          </Field>
-          <label className={`check ${miss("adult") ? "missing" : ""}`}>
-            <input type="checkbox" checked={form.adult} onChange={(e) => up({ adult: e.target.checked })} />
-            {zh ? "我已年满 16 岁" : "I am 16 or older"}
-          </label>
+          <FocusField form={form} up={up} miss={miss} />
         </div>
       )}
 
@@ -278,7 +336,7 @@ export default function Wizard({ form, setForm, onDone }: { form: Form; setForm:
 
       {showMissing && missing.length > 0 && <p className="hint warn center">{t(UI.required)}</p>}
       <div className="nav">
-        {step > 0 ? <button className="btn ghost" onClick={() => { setStep(step - 1); setShowMissing(false); }}>← {t(UI.back)}</button> : <span />}
+        <button className="btn ghost" onClick={() => { if (step === 0) onExit(); else { setStep(step - 1); setShowMissing(false); } }}>← {t(UI.back)}</button>
         <button className="btn primary" onClick={next}>{step < 3 ? `${t(UI.next)} →` : t(UI.seeReading)}</button>
       </div>
     </section>

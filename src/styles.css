@@ -257,3 +257,12 @@ footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid var(--line);
   .facing { justify-content: center; }
   .sec { font-size: 27px; }
 }
+.quick-head { text-align: center; margin: 18px 0 16px; }
+.quick-head h2 { font-size: clamp(26px, 4.5vw, 36px); }
+.center-nav { justify-content: center; }
+.small-note { font-size: 12.5px; color: var(--muted); }
+.score.locked .ring b { color: var(--muted); }
+.deepen { display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1.5px solid var(--gold); background: linear-gradient(135deg, #fffdf8, #f3ead6); margin-top: 18px; }
+.deepen h3 { font-size: 26px; margin-bottom: 6px; }
+.deepen ul { margin: 0; padding-left: 18px; color: var(--ink2); }
+.deepen li::marker { color: var(--gold); }
