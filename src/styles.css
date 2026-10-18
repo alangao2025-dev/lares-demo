@@ -281,3 +281,4 @@ button.palace:hover { box-shadow: 0 4px 14px rgba(169,130,63,.18); }
 .pl-gp span { margin-right: 4px; }
 .pl-more { display: block; margin-top: 4px; font-size: 12px; color: var(--gold); }
 @media (max-width: 640px) { .pl-guard p { display: none; } .care .pl-top em { display: inline-block; } .pl-gp { font-size: 11px; } }
+.pl-rooms { align-self: flex-start; }
